@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset='utf-8'>
+<!-- library specific styling-->
+<style>
+.tmjlib-grid-table-head-container{
+overflow-x:hidden;
+overflow-y:hidden;
+width:900px;
+}
+.tmjlib-grid-table-body-container{
+overflow-x:hidden;
+overflow-y:auto;
+width:920px;
+height:450px;
+}
+.tmjlib-grid-pagination td{
+width:50px;
+padding:5px;
+text-align:center;
+}
+.tmjlib-grid-pagination td a{
+text-decoration:none;
+padding:10px 10px;
+color:black;
+background-color:#efefef;
+font-size:15pt;
+}
+.tmjlib-grid-pagination td a:hover{
+font-weight:bolder;
+background-color:#454545;
+color:white;
+}
+.tmjlib-grid-container{
+width:800px;
+overflow-x:auto;
+border:1px solid black;
+}
+.tmjlib-grid-table-head{
+border-top:1px solid blue;
+border-right:1px solid blue;
+border-left:1px solid blue;
+border-bottom:0px;
+border-collapse:collapse;
+width:900px;
+}
+.tmjlib-grid-table-head td{
+border-top:1px solid white;
+border-right:1px solid white;
+border-left:1px solid white;
+border-bottom:0px;
+width:50px;
+text-align:right;
+padding:5px;
+font-weight:bold;
+background-color:#787878;
+color:white;
+}
+.tmjlib-grid-table-head td+td{
+width:100px;
+text-align:left;
+}
+.tmjlib-grid-table-head td+td+td{
+width:250px;
+}
+.tmjlib-grid-table-head td+td+td+td{
+width:150px;
+}
+.tmjlib-grid-table-head td+td+td+td+td{
+width:150px;
+}
+.tmjlib-grid-table-head td+td+td+td+td+td{
+width:150px;
+}
+
+.tmjlib-grid-table-body{
+border:1px groove red;
+border-collapse:collapse;
+width:900px;
+height:450px;
+}
+.tmjlib-grid-table-body tr:nth-child(even){
+background-color:#efefef;
+}
+.tmjlib-grid-table-body tr:hover{
+font-weight:bold;
+}
+.tmjlib-grid-table-body td{
+border:1px groove blue;
+width:50px;
+text-align:right;
+padding:5px;
+}
+.tmjlib-grid-table-body td+td{
+border:1px groove blue;
+width:100px;
+text-align:left;
+}
+.tmjlib-grid-table-body td+td+td{
+border:1px groove blue;
+width:250px;
+}
+.tmjlib-grid-table-body td+td+td+td{
+border:1px groove blue;
+width:150px;
+}
+.tmjlib-grid-table-body td+td+td+td+td{
+border:1px groove blue;
+width:150px;
+}
+.tmjlib-grid-table-body td+td+td+td+td+td{
+border:1px groove blue;
+width:150px;
+}
+</style>
+<!-- user specific styling-->
+<style>
+.user-grid-container{
+width:1000px;
+height:600px;
+border:1px solid black;
+}
+</style>
+<script>
+class Employee{
+constructor(empId,empName, empDesignation, empSalary, empMobile, empAddress){
+this.empId=empId;
+this.empName=empName;
+this.empDesignation=empDesignation;
+this.empSalary=empSalary;
+this.empMobile=empMobile;
+this.empAddress=empAddress;
+}
+}//Emploee class ends here
+
+class Grid{
+constructor(gridTableBodyId, gridPaginationTableId, employees, pageSize, pageNumber, numberOfPaginationControls){
+this.gridTableBodyId=gridTableBodyId;
+this.gridPaginationTableId=gridPaginationTableId;
+this.employees=employees;
+this.pageSize=pageSize;
+this.pageNumber=pageNumber;
+this.numberOfPaginationControls=numberOfPaginationControls;
+
+this.update();
+this.updatePagination();
+}//Grid constructor ends here
+update(){
+var gridTableBody=document.getElementById(this.gridTableBodyId);
+gridTableBody.innerHTML='';
+var startFrom=(this.pageNumber-1)*this.pageSize;
+var endAt=startFrom+this.pageSize-1;
+if(endAt>this.employees.length-1){
+endAt=this.employees.length-1;
+}
+var tr;
+var td;
+var i;
+for(i=startFrom; i<=endAt; i++){
+tr=document.createElement('tr');
+
+td=document.createElement('td');
+td.innerHTML=i+1;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empId;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empName;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empDesignation;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empSalary;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empMobile;
+tr.appendChild(td);
+
+td=document.createElement('td');
+td.innerHTML=this.employees[i].empAddress;
+tr.appendChild(td);
+
+gridTableBody.appendChild(tr);
+}
+}//update method ends here
+
+updatePagination(){
+var gridPaginationTable=document.getElementById(this.gridPaginationTableId);
+gridPaginationTable.innerHTML='';
+var startFrom=((Math.floor((this.pageNumber-1)/this.numberOfPaginationControls)+1)-1)*this.numberOfPaginationControls+1;
+var endAt=startFrom+this.numberOfPaginationControls-1;
+var numberOfPages=Math.floor(this.employees.length/this.pageSize);
+if(this.employees.length%this.pageSize != 0){
+numberOfPages++;
+}
+if(endAt>numberOfPages){
+endAt=numberOfPages;
+}
+var tr=document.createElement('tr');
+var td;
+var paginationControl;
+var i;
+if(startFrom>1){
+td=document.createElement('td');
+paginationControl=document.createElement('a');
+paginationControl.text='...previous';
+paginationControl.onclick=ff(this.employees, this.pageSize, startFrom-1, this.numberOfPaginationControls);
+td.appendChild(paginationControl);
+tr.appendChild(td);
+}
+for(i=startFrom; i<=endAt; i++){
+if(i==this.pageNumber){
+td=document.createElement('td');
+td.innerHTML='<b>'+i+'<b>';
+tr.appendChild(td);
+}else{
+td=document.createElement('td');
+paginationControl=document.createElement('a');
+paginationControl.text=i;
+paginationControl.onclick=ff(this.employees, this.pageSize, i, this.numberOfPaginationControls);
+td.appendChild(paginationControl);
+tr.appendChild(td);
+}
+}
+if(endAt<numberOfPages){
+td=document.createElement('td');
+paginationControl=document.createElement('a');
+paginationControl.text='next...';
+paginationControl.onclick=ff(this.employees, this.pageSize, endAt+1, this.numberOfPaginationControls);
+td.appendChild(paginationControl);
+tr.appendChild(td);
+}
+gridPaginationTable.appendChild(tr);
+
+function ff(employees, ps, pn, nopc){
+return function(){gg(employees, ps, pn, nopc);};
+}
+
+}//updatePagination method ends here
+}//Grid class ends here
+
+function gg(employees, ps, pn, nopc){
+//alert(employees+'...'+ps+'...'+pn+'...'+nopc);
+new Grid('gridTableBody', 'gridPaginationTable', employees, ps, pn, nopc);
+}
+
+var model={
+"gird":null
+}
+function loader(){
+var employees=new Array();
+var i;
+for(i=1;i<500;i++){
+employees.push(new Employee(i, i+" name", i+" designation", i+" salary", i+" mobile", i+" address"));
+}
+model.grid=new Grid('gridTableBody', 'gridPaginationTable', employees, 10, 1, 8);
+}
+window.addEventListener('load', loader);
+</script>
+</head>
+<body>
+<div class='user-grid-container'>
+<div class='tmjlib-grid-container'>
+
+<div class='tmjlib-grid-table-head-container'>
+<table class='tmjlib-grid-table-head'>
+<tr>
+<td>S.No.</td>
+<td>Employee Id</td>
+<td>Name</td>
+<td>Designation</td>
+<td>Salary</td>
+<td>Mobile</td>
+<td>Address</td>
+</tr>
+</table>
+</div><!-- head container ends-->
+
+<div class='tmjlib-grid-table-body-container'>
+<table class='tmjlib-grid-table-body' id='gridTableBody'>
+</table>
+</div><!-- body container ends-->
+
+</div><!--tmjlibgrid container ends-->
+
+<div class='tmjlib-grid-pagination-container'>
+<table class='tmjlib-grid-pagination' id='gridPaginationTable'>
+</table>
+</div><!-- grid-pagination-container ends-->
+
+
+</div><!--user-grid container ends-->
+
+<br><br><br>
+<a href='/TMJLib/egTemp.html'>back to temp</a>
+</body>
+</html>
