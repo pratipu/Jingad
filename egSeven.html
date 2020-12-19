@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+
+function $$$(elementId){
+var element=document.getElementById(elementId);
+if(!element){
+throw "invalid id"+elementId;
+}
+return new TMJLibElement(element);
+}
+
+$$$.model={
+"onStartUp":[],
+"accordians":[],
+"modals":[]
+}
+
+$$$.onDocumentLoaded=function(func){
+if(typeof func != 'function'){
+throw 'Expected function, found '+typeof func+' in a call to onDocumentLoaded';
+}
+$$$.model.onStartUp[$$$.model.onStartUp.length]=func;
+}
+
+$$$.initFrameWork=function(){
+
+var allTags=document.getElementsByTagName('*');
+var tag=null;
+for(let i=0; i<allTags.length; i++){
+/************ populating accordian array *************/
+if(allTags[i].hasAttribute('accordian')){
+tag=allTags[i];
+if(tag.getAttribute('accordian')=='true'){
+$$$.toAccordian(tag);
+}
+}
+
+/************** populating modal array **************/
+if(allTags[i].hasAttribute('toModal')){
+if(allTags[i].getAttribute('toModal')=='true'){
+allTags[i].setAttribute('toModal', 'false');
+$$$.model.modals[$$$.model.modals.length]=new Modal(allTags[i]);
+i--;
+}
+}
+
+}
+
+var len=0;
+while(len<$$$.model.onStartUp.length){
+$$$.model.onStartUp[len]();
+len++;
+}
+}
+
+window.addEventListener('load', $$$.initFrameWork);
+
+/*******************************************************/
+
+function TMJLibElement(element){
+this.element=element,
+
+this.html=function(value){
+if(typeof this.element.innerHTML){
+if(typeof value){
+this.element.innerHTML=value;
+}
+return this.element.innerHTML;
+}
+return null;
+},// html function ends here
+/****************************************/
+this.value=function(value){
+if(typeof this.element.value){
+if(value){
+this.element.value=value;
+}
+return this.element.value;
+}
+return null;
+},//value function ends here
+/*****************************************/
+this.fillComboBox=function(jsonObject){
+
+if(this.element.nodeName != 'SELECT'){
+throw 'fillComboBox function can be called on a SELECT type element only';
+}
+
+if(!jsonObject['dataSource']){
+throw 'dataSource property missing in a call to fillComboBox function';
+}
+var dataSource=jsonObject['dataSource'];
+if((typeof dataSource == 'string')||(typeof dataSource == 'number')||(typeof dataSource == 'function')||(typeof dataSource == 'boolean')){
+throw 'dataSource property must be a collection in a call to fillComboBox function';
+}
+if(!dataSource.length){
+throw 'dataSource property must be a collection in a call to fillComboBox function';
+}
+
+if(!jsonObject['text']){
+throw 'text property missing in a call to fillComboBox function';
+}
+var text=jsonObject['text'];
+if(typeof text != 'string'){
+throw 'text property must be of type string in a call to fillComboBox function';
+}
+
+if(!jsonObject['value']){
+throw 'value property missing in a call to fillComboBox function';
+}
+var value=jsonObject['value'];
+if(typeof value != 'string'){
+throw 'value property must be of type string in a call to fillComboBox function';
+}
+
+var isTextInDataSource;
+var isValueInDataSource;
+
+for(i=0;i<dataSource.length;i++){
+isTextInDataSource=false;
+isValueInDataSource=false;
+for(key in dataSource[i]){
+if(key==text){
+isTextInDataSource=true;
+}
+if(key==value){
+isValueInDataSource=true;
+}
+}
+}
+
+if(!(isTextInDataSource && isValueInDataSource)){
+throw 'text and value properties must be the keys of objects that dataSource is collection of';
+}
+var firstOption;
+if(jsonObject['firstOption']){
+firstOption=jsonObject['firstOption'];
+}
+if(firstOption){
+for(key in firstOption){
+if((typeof firstOption[key]) != 'string'){
+throw 'property firstOption must have two properties of type string in a call to fillComboBox';
+}
+}
+}
+
+this.element.innerHTML='';
+for(i=0; i<dataSource.length; i++){
+var option=document.createElement('option');
+option.text=dataSource[i][text];
+option.value=dataSource[i][value];
+this.element.appendChild(option);
+}
+
+}// fillComboBox function ends here
+
+}//class TMJLibElement ends here
+
+/**********************************************************************************/
+
+$$$.ajax=function(jsonObject){
+if(!jsonObject['url']){
+throw "url property missing in a call to ajax!";
+}
+let url=jsonObject['url'];
+if(typeof url != 'string'){
+throw "url property must be of string type in a call to ajax!";
+}
+
+if(!jsonObject['methodType']){
+throw "methodType property missing in a call to ajax!";
+}
+let methodType=jsonObject['methodType'];
+if(typeof methodType != 'string'){
+throw "methodType property must be of string type in a call to ajax";
+}
+methodType=methodType.toUpperCase();
+if(!["GET","POST"].includes(methodType)){
+throw "methodType property must be GET/POST in a call to ajax!";
+}
+let onSuccess=null;
+if(jsonObject['success']){
+onSuccess=jsonObject['success'];
+if(typeof onSuccess != 'function'){
+throw "success property must be of type function in a call to ajax";
+}
+}
+let onFailure=null;
+if(jsonObject['failure']){
+onFailure=jsonObject['failure'];
+if(typeof onFailure != 'function'){
+throw "failure property must be of type function in a call to ajax";
+}
+}
+if(methodType=='GET'){
+
+if(jsonObject['data']){
+let data=jsonObject['data'];
+var key;
+var queryString='';
+let qsName;
+let sqValue;
+let flag=0;
+for(key in data){
+if(flag==0){
+queryString='?';
+}
+if(flag>0){
+queryString+='&';
+}
+flag++;
+qsName=key;
+qsValue=data[key];
+queryString=queryString+qsName+'='+qsValue;
+}
+url=url+queryString;
+}
+
+
+let xmlHttpRequest=new XMLHttpRequest();
+xmlHttpRequest.onreadystatechange=function(){
+if(this.readyState==4){
+if(this.status==200){
+//alert(this.getResponseHeader('content-type'));
+let responseData=this.responseText;
+onSuccess(responseData);
+}
+else{
+onFailure();
+}
+}
+};
+xmlHttpRequest.open(methodType, url, true);
+xmlHttpRequest.send();
+}
+
+if(methodType=='POST'){
+
+if(jsonObject['data']){
+
+var data=jsonObject['data'];
+
+var queryString='';
+
+if(jsonObject['sendJSON']){
+var sendJson=jsonObject['sendJSON'];
+if(typeof jsonObject['sendJSON'] != 'boolean'){
+throw 'sendJSON property must be of type boolean in a call to ajax';
+}
+}
+
+var key;
+let qsName;
+let sqValue;
+let flag=0;
+
+for(key in data){
+
+if(flag>0){
+queryString+='&';
+}
+flag++;
+qsName=encodeURI(key);
+qsValue=encodeURI(data[key]);
+queryString=queryString+qsName+'='+qsValue;
+}
+}
+
+let xmlHttpRequest=new XMLHttpRequest();
+xmlHttpRequest.onreadystatechange=function(){
+if(this.readyState==4){
+if(this.status==200){
+//alert(this.getResponseHeader('content-type'));
+let responseData=this.responseText;
+onSuccess(responseData);
+}
+else{
+onFailure();
+}
+}
+};
+
+xmlHttpRequest.open(methodType, url, true);
+if(sendJson==true){
+xmlHttpRequest.setRequestHeader("Content-type","application/json");
+xmlHttpRequest.send(JSON.stringify(data));
+}else{
+xmlHttpRequest.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+xmlHttpRequest.send(queryString);
+}
+}
+}// end of ajax function
+
+/*********************************************************/
+
+$$$.onAccordianHeadingClicked=function(accordianIndex, panelIndex){
+
+if($$$.model.accordians[accordianIndex].displayedIndex != -1){
+
+$$$.model.accordians[accordianIndex].accordianPanels[$$$.model.accordians[accordianIndex].displayedIndex].style.display='none';
+}
+$$$.model.accordians[accordianIndex].accordianPanels[panelIndex+1].style.display=$$$.model.accordians[accordianIndex].accordianPanels[panelIndex+1].oldDisplay;
+$$$.model.accordians[accordianIndex].displayedIndex=panelIndex+1;
+}// end of onAccordianHeadingClicked function
+
+/********************************************************/
+
+$$$.toAccordian=function(accordianDiv){
+
+var accordianPanels=[];
+var displayedIndex=-1;
+
+var accordianChildren=accordianDiv.childNodes;
+
+for(i=0; i<accordianChildren.length; i++){
+if(accordianChildren[i].nodeName == 'H2'){
+accordianPanels[accordianPanels.length]=accordianChildren[i];
+}
+if(accordianChildren[i].nodeName == 'DIV'){
+accordianPanels[accordianPanels.length]=accordianChildren[i];
+}
+}
+if(accordianPanels.length%2 != 0){
+throw 'heading and divisions malformed in accordian';
+}
+for(i=0;i<accordianPanels.length;i+=2){
+if(accordianPanels[i].nodeName!='H2'){
+throw 'heading and divisions malformed in accordian';
+}
+if(accordianPanels[i+1].nodeName!='DIV'){
+throw 'heading and divisions malformed in accordian';
+}
+}
+
+function addAccordianClickListener(accordianIndex, panelIndex){
+return function(){
+$$$.onAccordianHeadingClicked(accordianIndex, panelIndex);
+};
+}
+
+var accordianIndex=$$$.model.accordians.length;
+for(i=0;i<accordianPanels.length;i+=2){
+accordianPanels[i].onclick=addAccordianClickListener(accordianIndex, i);
+accordianPanels[i+1].oldDisplay=accordianPanels[i+1].style.display;
+accordianPanels[i+1].style.display='none';
+}
+
+$$$.model.accordians[accordianIndex]={
+"accordianPanels":accordianPanels,
+"displayedIndex":-1
+}
+}//end of toAccordian function
+/**************************************************************/
+
+function Modal(modalElem){
+
+var modalElement=modalElem;
+this.getModalElementId=function(){
+return modalElement.id;
+}
+
+modalElement.remove();
+
+var size=null;
+var width=0;
+var height=0;
+var modalWidth=null;
+var modalHeight=null;
+var modalContainerBackgroundColor=null;
+var modalBackgroundColor=null;
+var modalHeader=null;
+var modalFooter=null;
+var closeButton=null;
+var beforeOpening=null;
+var beforeClosing=null;
+var afterOpening=null;
+var afterClosing=null;
+
+if(modalElement.hasAttribute('size')){
+size=modalElement.getAttribute('size');
+if(size.indexOf('x')==-1){
+throw 'invalid value of property size, must be in the form of \'widthxheight\'';
+}
+
+width=new Number(size.substr(0, size.indexOf('x')))+40;
+height=new Number(size.substr((size.indexOf('x'))+1, size.length))+40;
+
+modalWidth=width+'px';
+modalHeight=height+'px';
+
+}else{
+throw 'property \'size\' missing inside modal element';
+}
+
+if(modalElement.hasAttribute('modalContainerBackgroundColor')){
+modalContainerBackgroundColor=modalElement.getAttribute('modalContainerBackgroundColor');
+}else{
+throw 'property \'modalContainerBackgroundColor\' missing inside modal element';
+}
+
+if(modalElement.hasAttribute('modalBackgroundColor')){
+modalBackgroundColor=modalElement.getAttribute('modalBackgroundColor');
+}else{
+throw 'property \'modalBackgroundColor\' missing inside modal element';
+}
+
+if(modalElement.hasAttribute('modalHeader')){
+modalHeader=modalElement.getAttribute('modalHeader');
+}
+if(modalElement.hasAttribute('modalFooter')){
+modalFooter=modalElement.getAttribute('modalFooter');
+}
+
+if(modalElement.hasAttribute('closeButton')){
+closeButton=modalElement.getAttribute('closeButton');
+var validOptions=["true", "false"];
+if(!validOptions.includes(closeButton)){
+throw 'invalid value \''+closeButton+'\' of property closeButton inside modal element';
+}
+}else{
+throw 'property \' closeButton\' missing inside modal element';
+}
+
+if(modalElement.hasAttribute('afterOpening')){
+afterOpening=modalElement.getAttribute('afterOpening');
+}
+if(modalElement.hasAttribute('afterClosing')){
+afterClosing=modalElement.getAttribute('afterClosing');
+}
+
+if(modalElement.hasAttribute('beforeOpening')){
+beforeOpening=modalElement.getAttribute('beforeOpening');
+}
+if(modalElement.hasAttribute('beforeClosing')){
+beforeClosing=modalElement.getAttribute('beforeClosing');
+}
+
+var modalContainer=document.createElement('div');
+modalContainer.style.width='100%';
+modalContainer.style.height='100%';
+modalContainer.style.backgroundColor=modalContainerBackgroundColor;
+modalContainer.style.top=0;
+modalContainer.style.left=0;
+modalContainer.style.position='fixed';
+modalContainer.style.opacity='80%';
+modalContainer.style.display='none';
+document.body.appendChild(modalContainer);
+
+var modal=document.createElement('div');
+modal.style.width=modalWidth;
+modal.style.height=modalHeight;
+modal.style.textAlign='center';
+modal.style.left=0;
+modal.style.right=0;
+modal.style.top=0;
+modal.style.bottom=0;
+modal.style.margin='auto';
+modal.style.position='fixed';
+modal.style.backgroundColor=modalBackgroundColor;
+modal.style.borderRadius='1%';
+modal.style.display='none';
+document.body.appendChild(modal);
+
+var closeButtonContainer=document.createElement('span');
+closeButtonContainer.style.fontSize='13.5pt';
+closeButtonContainer.style.fontFamily='calibri';
+closeButtonContainer.style.float='auto';
+closeButtonContainer.style.width='auto';
+closeButtonContainer.style.height='25px';
+closeButtonContainer.style.padding='5px 5px 3px 5px';
+closeButtonContainer.style.margin='5px';
+closeButtonContainer.style.cursor='pointer';
+closeButtonContainer.style.float='right';
+var closeButtonText=document.createTextNode('close');
+closeButtonContainer.appendChild(closeButtonText);
+
+var modalHeaderContainer=document.createElement('div');
+modalHeaderContainer.style.width='100%';
+modalHeaderContainer.style.height='40px';
+modalHeaderContainer.style.borderBottom='1px solid black';
+
+if(modalHeader != null){
+var header=document.createElement('span');
+header.appendChild(document.createTextNode(modalHeader));
+header.style.top=0;
+header.style.left=0;
+header.style.right=0;
+header.style.position='absolute';
+header.style.marginTop='5px';
+header.style.marginBottom='5px';
+header.style.marginRight='45px';
+header.style.fontSize='16pt';
+header.style.fontWeight='bolder';
+modalHeaderContainer.appendChild(header);
+}
+
+closeButtonContainer.addEventListener('mouseover',function(){
+this.style.fontWeight='bolder';
+this.style.borderRadius='5px';
+this.style.color='red';
+});
+closeButtonContainer.addEventListener('mouseout',function(){
+this.style.fontWeight='normal';
+this.style.color='black';
+this.style.backgroundColor=modalBackgroundColor;
+});
+closeButtonContainer.onclick=function(){
+let closeModal=true;
+if(beforeClosing){
+closeModal=eval(beforeClosing);
+}
+if(closeModal){
+//modalContainer.remove();
+//modal.remove();
+modalContainer.style.display='none';
+modal.style.display='none';
+if(afterClosing != null){
+setTimeout(function(){
+eval(afterClosing);
+},100);
+}
+}
+};
+
+if(closeButton == 'true'){
+modalHeaderContainer.appendChild(closeButtonContainer);
+}
+
+modal.appendChild(modalHeaderContainer);
+
+var modalElementContainer=document.createElement('div');
+modalElementContainer.style.overflow='auto';
+modalElementContainer.style.height=(modal.style.height.substr(0, modal.style.width.length-2)-80)+'px';
+modalElementContainer.style.width='100%';
+modalElementContainer.style.margin=0;
+
+modalElementContainer.appendChild(modalElement)
+//modalElement.style.marginLeft='5%';
+modalElement.style.marginTop='5%';
+modalElement.style.display='block';
+modalElement.style.visibility='visible';
+
+modal.appendChild(modalElementContainer);
+
+var modalFooterContainer=document.createElement('div');
+modalFooterContainer.style.width='100%';
+modalFooterContainer.style.height='40px';
+modalFooterContainer.style.borderTop='1px solid black';
+
+if(modalFooter != null){
+var footer=document.createElement('span');
+footer.appendChild(document.createTextNode(modalFooter));
+footer.style.left=0;
+footer.style.right=0;
+footer.style.bottom=0;
+footer.style.position='absolute';
+footer.style.marginBottom='1.5%';
+modalFooterContainer.appendChild(footer);
+}
+modal.appendChild(modalFooterContainer);
+
+this.showModal=function(){
+let openModal=true;
+if(beforeOpening){
+openModal=eval(beforeOpening);
+}
+
+if(openModal){
+if(afterOpening != null){
+setTimeout(function(){
+eval(afterOpening);
+},100);
+}
+
+//modalElement.style.display=modalElement.oldDisplay;
+modalContainer.style.display='block';
+modal.style.display='block';
+}
+}//end of showModal function
+
+}// end of Modal class
+/******************************************************/
+
+$$$.showModal=function(modalElementId){
+var modalElement=null;
+for(var i=0; i<$$$.model.modals.length; i++){
+//alert(modalElementId+'.......'+ds.modals[i].getModalElementId());
+if($$$.model.modals[i].getModalElementId()==modalElementId){
+modalElement=$$$.model.modals[i];
+break;
+}
+}
+if(modalElement != null){
+modalElement.showModal();
+}
+}
+
+/**********************************Library Ends and Developer part starts**********************************/
+function login(){
+$$$.showModal('loginFormContainerDiv');
+}
+function openLoginModal(){
+alert('after opening login modal');
+}
+function closeLoginModal(){
+alert('after closing login modal');
+}
+function beforeOpeningLoginModel(){
+alert('before opening login model');
+return true;
+}
+function beforeClosingLoginModel(){
+alert('before closing login model');
+return true;
+}
+
+function addDesignation(){
+$$$.showModal('addDesignationFormContainerDiv');
+}
+function openAddDesignationModal(){
+alert('opening add designation modal');
+}
+function closeAddDesignationModal(){
+alert('closing add designation modal');
+}
+function beforeOpeningAddDesignationModel(){
+alert('before opening add designation model');
+return true;
+}
+function beforeClosingAddDesignationModel(){
+alert('before closing add designation model');
+return true;
+}
+/***************************************************************************************************/
+</script>
+</head>
+<body background='/TMJLib/images/grassOne.jpg'>
+<button type='button' onclick='login()'>Login</button>
+<button type='button' onclick='addDesignation()'>Add Designation</button>
+<button onclick='alert(document.getElementById("userName"))'>GetUserName</button>
+<br><br><br>
+<a href='/TMJLib/index.html'>Home</a>
+<div id='loginFormContainerDiv' toModal='true' style='display:none'
+size='700x350'
+modalContainerBackgroundColor='#000000';
+modalBackgroundColor='#ffffff';
+modalHeader='Login Form'
+modalFooter='you can not access the functionality unless you provide valid credentials'
+closeButton='true'
+afterOpening='openLoginModal()'
+afterClosing='closeLoginModal()'
+beforeOpening='beforeOpeningLoginModel()'
+beforeClosing='beforeClosingLoginModel()'
+>
+<table style='border-color:#efefef;left:0;right:0;margin:auto;position:relative' border='5'>
+<tr>
+<td style='padding:5px;'>Username</td>
+<td style='padding:5px;'><input type='text' style='border-radius:5px;padding:5px' id='userName' size='35'></td>
+<tr>
+<tr>
+<td style='padding:5px;'>Password</td>
+<td style='padding:5px;'><input type='text' style='border-radius:5px;padding:5px;' id='passWord' size='35'></td>
+<tr>
+<tr>
+<td style='padding:5px;' colspan='2'><button type='submit'>LOGIN</button>
+<button type='submit'>Forget Password</button>
+</td>
+<tr>
+</table>
+</div>
+
+<div id='addDesignationFormContainerDiv' toModal='true'
+size='600x300'
+modalContainerBackgroundColor='#123456';
+modalBackgroundColor='#efefef';
+modalHeader='Designation Module'
+modalFooter='click add after filling designation and department textboxes'
+closeButton='true'
+afterOpening='openAddDesignationModal()'
+afterClosing='closeAddDesignationModal()'
+beforeOpening='beforeOpeningAddDesignationModel()'
+beforeClosing='beforeClosingAddDesignationModel()'
+>
+<h2 style='text-align:center'>Add Designation</h2>
+<table style='top:10%;left:0;bottom:0;right:0;margin:auto;position:relative;'>
+<tr>
+<td style='padding:5px;'>Designation</td>
+<td style='padding:5px;'><input type='text' id='designation' style='border-radius:5px;padding:5px;' size='35'></td>
+<tr>
+<tr>
+<td style='padding:5px;'>Department</td>
+<td style='padding:5px;'><input type='text' id='department' style='border-radius:5px;padding:5px;' size='35'></td>
+<tr>
+<tr>
+<td style='padding:5px;' colspan='2'><button type='submit'>Add</button>
+<button type='submit'>Cancel</button>
+</td>
+<tr>
+</table>
+</div>
+
+<div id='ad1' accordian='true'>
+<h2>Heading One</h2>
+<div>
+content one content one content one<br>
+content one content one content one<br>
+content one content one content one<br>
+content one content one content one<br>
+</div>
+<h2>Heading Two</h2>
+<div>
+content Two content Two content Two<br>
+content Two content Two content Two<br>
+content Two content Two content Two<br>
+content Two content Two content Two<br>
+</div>
+<h2>Heading Three</h2>
+<div>
+content Three content Three content Three<br>
+content Three content Three content Three<br>
+content Three content Three content Three<br>
+content Three content Three content Three<br>
+</div>
+</div>
+
+</body>
+</html>
